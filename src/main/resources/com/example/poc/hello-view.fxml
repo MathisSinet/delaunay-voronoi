@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.canvas.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox alignment="TOP_CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17.0.12" fx:controller="com.example.poc.MainController">
+
+    <HBox alignment="CENTER" spacing="10.0">
+        <Label text="Nombre de points:" style="-fx-font-size: 14;" />
+        <Spinner fx:id="numPointsSpinner" editable="true" style="-fx-font-size: 14;" />
+        <Label fx:id="numPointsLabel" style="-fx-font-size: 14;" />
+        <Separator orientation="VERTICAL" />
+        <Button text="Réinitialiser" onAction="#onResetCanvas" style="-fx-font-size: 14;" />
+        <Button text="Début" onAction="#onJumpToStart" style="-fx-font-size: 14;" />
+        <Button text="Reculer" onAction="#onBackward" style="-fx-font-size: 14;" />
+        <Button text="Avancer" onAction="#onForward" style="-fx-font-size: 14;" />
+        <Button text="Fin" onAction="#onJumpToEnd" style="-fx-font-size: 14;" />
+    </HBox>
+
+    <Canvas fx:id="canvas" height="800" width="1500">
+
+    </Canvas>
+</VBox>
