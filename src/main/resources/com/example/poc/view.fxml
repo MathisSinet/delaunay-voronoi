@@ -16,6 +16,12 @@
         <Button text="Previous Step" onAction="#onBackward" style="-fx-font-size: 14;" />
         <Button text="Next Step" onAction="#onForward" style="-fx-font-size: 14;" />
         <Button text="End" onAction="#onJumpToEnd" style="-fx-font-size: 14;" />
+        <Separator orientation="VERTICAL" />
+        <VBox spacing="5.0">
+            <CheckBox fx:id="drawCirclesCheckBox" text="Draw Circles" />
+            <CheckBox fx:id="drawDelaunayCheckBox" text="Draw Delaunay" selected="true" />
+            <CheckBox fx:id="drawVoronoiCheckBox" text="Draw Voronoi" selected="true" />
+        </VBox>
     </HBox>
 
     <Canvas fx:id="canvas" height="800" width="1500">

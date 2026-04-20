@@ -8,6 +8,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
+import javafx.scene.control.CheckBox;
 import javafx.scene.paint.Color;
 import java.net.URL;
 import java.util.ArrayList;
@@ -27,6 +28,12 @@ public class MainController implements Initializable {
     private Spinner<Integer> numPointsSpinner;
     @FXML
     private Label numPointsLabel;
+    @FXML
+    private CheckBox drawCirclesCheckBox;
+    @FXML
+    private CheckBox drawDelaunayCheckBox;
+    @FXML
+    private CheckBox drawVoronoiCheckBox;
 
     private int NUM_POINTS = 10;
     private static final int POINT_RADIUS = 5;
@@ -39,7 +46,7 @@ public class MainController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         // Initialiser le spinner
-        SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(5, 30, 10);
+        SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(5, 50, 10);
         numPointsSpinner.setValueFactory(valueFactory);
         numPointsSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
             NUM_POINTS = newVal;
@@ -48,6 +55,11 @@ public class MainController implements Initializable {
             onResetCanvas();
         });
         numPointsLabel.setText("10");
+        
+        // Add listeners to checkboxes
+        drawCirclesCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> drawCanvas());
+        drawDelaunayCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> drawCanvas());
+        drawVoronoiCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> drawCanvas());
         
         onResetCanvas();
     }
@@ -61,26 +73,25 @@ public class MainController implements Initializable {
     @FXML
     public void onJumpToStart() {
         stateid = 0;
-        drawDelaunayTriangulation();
+        drawCanvas();
     }
 
     @FXML
     public void onForward() {
         stateid = Math.min(stateid + 1, triangulation.getStepCount() - 1);
-        drawDelaunayTriangulation();
+        drawCanvas();
     }
 
     @FXML
     public void onBackward() {
         stateid = Math.max(stateid - 1, 0);
-        drawDelaunayTriangulation();
+        drawCanvas();
     }
 
     @FXML
     public void onJumpToEnd() {
         stateid = triangulation.getStepCount() - 1;
-        drawDelaunayTriangulation();
-        drawVoronoi();
+        drawCanvas();
     }
 
     private void generateRandomPoints() {
@@ -133,18 +144,45 @@ public class MainController implements Initializable {
         stateid = 0;
     }
 
+    private void drawCanvas() {
+
+        clearCanvas();
+
+        if (stateid != triangulation.getStepCount() - 1) {
+            drawDelaunayTriangulation();
+        }
+        else {
+            if (isDrawDelaunayEnabled()) {
+                drawDelaunayTriangulation();
+            }
+            if (isDrawVoronoiEnabled()) {
+                drawVoronoi();
+            }
+            drawPoints();
+        }
+    }
+
+    private void drawPoints() {
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        DBWStep step = triangulation.getStep(stateid);
+        gc.setFill(Color.BLACK);
+        for (Point2D point: step.visited) {
+            drawPoint(gc, point);
+        }
+    }
+
     private void drawDelaunayTriangulation() {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         DBWStep step = triangulation.getStep(stateid);
 
-        clearCanvas();
-
         // Cercles circonscrits
-        gc.setStroke(Color.WHITE); // LIGHTGRAY
-        gc.setLineWidth(1);
-        for (Triangle triangle: step.triangles) {
-            drawCircle(gc, triangle.getCenter(), triangle.getRadius());;
-        };
+        if (isDrawCirclesEnabled()) {
+            gc.setStroke(Color.LIGHTGRAY); // LIGHTGRAY
+            gc.setLineWidth(1);
+            for (Triangle triangle: step.triangles) {
+                drawCircle(gc, triangle.getCenter(), triangle.getRadius());;
+            };
+        }
 
         // Triangles
         gc.setFill(Color.ORANGE); // ORANGE
@@ -159,11 +197,7 @@ public class MainController implements Initializable {
         gc.setStroke(Color.WHITE);
         drawTriangle(gc, triangulation.getSupertriangle());
 
-        // Sommets
-        gc.setFill(Color.BLACK);
-        for (Point2D point: step.visited) {
-            drawPoint(gc, point);
-        }
+        drawPoints();
 
         // Triangles à supprimer
         if (step.badTriangles != null) {
@@ -199,5 +233,17 @@ public class MainController implements Initializable {
                 drawEdge(gc, edge);
             }
         }
+    }
+
+    public boolean isDrawCirclesEnabled() {
+        return drawCirclesCheckBox.isSelected();
+    }
+
+    public boolean isDrawDelaunayEnabled() {
+        return drawDelaunayCheckBox.isSelected();
+    }
+
+    public boolean isDrawVoronoiEnabled() {
+        return drawVoronoiCheckBox.isSelected();
     }
 }
