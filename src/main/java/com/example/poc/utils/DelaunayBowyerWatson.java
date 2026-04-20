@@ -24,6 +24,10 @@ public class DelaunayBowyerWatson {
         return steps.get(id);
     }
 
+    public DBWStep getLastStep() {
+        return steps.getLast();
+    }
+
     public int getStepCount() {
         return steps.size();
     }

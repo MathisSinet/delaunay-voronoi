@@ -10,12 +10,15 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.paint.Color;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.ResourceBundle;
 
 import com.example.poc.utils.DBWStep;
 import com.example.poc.utils.DelaunayBowyerWatson;
+import com.example.poc.utils.Edge;
 import com.example.poc.utils.Triangle;
+import com.example.poc.utils.Voronoi;
 
 public class MainController implements Initializable {
     @FXML
@@ -25,8 +28,10 @@ public class MainController implements Initializable {
     @FXML
     private Label numPointsLabel;
 
-    private int NUM_POINTS = 30;
+    private int NUM_POINTS = 10;
     private static final int POINT_RADIUS = 5;
+    private static final int DELAUNAY_EDGE_WIDTH = 1;
+    private static final int VORONOI_EDGE_WIDTH = 3;
     private Point2D[] points = new Point2D[NUM_POINTS];
     private DelaunayBowyerWatson triangulation;
     private int stateid;
@@ -34,7 +39,7 @@ public class MainController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         // Initialiser le spinner
-        SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(5, 30, 30);
+        SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(5, 30, 10);
         numPointsSpinner.setValueFactory(valueFactory);
         numPointsSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
             NUM_POINTS = newVal;
@@ -42,7 +47,7 @@ public class MainController implements Initializable {
             numPointsLabel.setText(String.valueOf(newVal));
             onResetCanvas();
         });
-        numPointsLabel.setText("30");
+        numPointsLabel.setText("10");
         
         onResetCanvas();
     }
@@ -56,35 +61,42 @@ public class MainController implements Initializable {
     @FXML
     public void onJumpToStart() {
         stateid = 0;
-        drawCanvas();
+        drawDelaunayTriangulation();
     }
 
     @FXML
     public void onForward() {
         stateid = Math.min(stateid + 1, triangulation.getStepCount() - 1);
-        drawCanvas();
+        drawDelaunayTriangulation();
     }
 
     @FXML
     public void onBackward() {
         stateid = Math.max(stateid - 1, 0);
-        drawCanvas();
+        drawDelaunayTriangulation();
     }
 
     @FXML
     public void onJumpToEnd() {
         stateid = triangulation.getStepCount() - 1;
-        drawCanvas();
+        drawDelaunayTriangulation();
+        drawVoronoi();
     }
 
     private void generateRandomPoints() {
         Random random = new Random();
         for (int i = 0; i < NUM_POINTS; i++) {
             points[i] = new Point2D(
-                (0.2 + 0.6 * random.nextDouble()) * canvas.getWidth(),
-                (0.2 + 0.6 * random.nextDouble()) * canvas.getHeight()
+                (0.1 + 0.8 * random.nextDouble()) * canvas.getWidth(),
+                (0.1 + 0.8 * random.nextDouble()) * canvas.getHeight()
             );
         }
+    }
+
+    private void clearCanvas() {
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.setFill(Color.WHITE);
+        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
     }
 
     private void drawPoint(GraphicsContext gc, Point2D point) {
@@ -98,6 +110,10 @@ public class MainController implements Initializable {
 
     private void drawEdge(GraphicsContext gc, Point2D p1, Point2D p2) {
         gc.strokeLine(p1.getX(), p1.getY(), p2.getX(), p2.getY());
+    }
+    
+    private void drawEdge(GraphicsContext gc, Edge edge) {
+        drawEdge(gc, edge.getV1(), edge.getV2());
     }
 
     private void drawTriangle(GraphicsContext gc, Triangle triangle) {
@@ -117,31 +133,30 @@ public class MainController implements Initializable {
         stateid = 0;
     }
 
-    private void drawCanvas() {
+    private void drawDelaunayTriangulation() {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         DBWStep step = triangulation.getStep(stateid);
 
-        gc.setFill(Color.WHITE);
-        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        clearCanvas();
 
         // Cercles circonscrits
-        gc.setStroke(Color.LIGHTGRAY);
+        gc.setStroke(Color.WHITE); // LIGHTGRAY
         gc.setLineWidth(1);
         for (Triangle triangle: step.triangles) {
             drawCircle(gc, triangle.getCenter(), triangle.getRadius());;
         };
 
         // Triangles
-        gc.setFill(Color.ORANGE);
-        gc.setStroke(Color.BLUE);
-        gc.setLineWidth(2);
+        gc.setFill(Color.ORANGE); // ORANGE
+        gc.setStroke(Color.BLUE); // BLUE
+        gc.setLineWidth(DELAUNAY_EDGE_WIDTH);
         for (Triangle triangle: step.triangles) {
             drawTriangle(gc, triangle);
             drawPoint(gc, triangle.getCenter());
         };
         
         // Supertriangle
-        gc.setStroke(Color.GREEN);
+        gc.setStroke(Color.WHITE);
         drawTriangle(gc, triangulation.getSupertriangle());
 
         // Sommets
@@ -153,7 +168,7 @@ public class MainController implements Initializable {
         // Triangles à supprimer
         if (step.badTriangles != null) {
             gc.setStroke(Color.RED);
-            gc.setLineWidth(2);
+            gc.setLineWidth(DELAUNAY_EDGE_WIDTH);
             for (Triangle badTriangle: step.badTriangles) {
                 drawTriangle(gc, badTriangle);
             }
@@ -163,6 +178,26 @@ public class MainController implements Initializable {
         if (step.newPoint != null) {
             gc.setFill(Color.LIME);
             drawPoint(gc, step.newPoint);
+        }
+    }
+
+    private void drawVoronoi() {
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+
+        Voronoi voronoi = new Voronoi(
+            points, 
+            triangulation.getLastStep().triangles, 
+            new Point2D(0, 0), 
+            new Point2D(canvas.getWidth(), canvas.getHeight())
+        );
+
+        gc.setStroke(Color.PURPLE);
+        gc.setLineWidth(VORONOI_EDGE_WIDTH);
+
+        for (ArrayList<Edge> edges: voronoi.getPolygons().values()) {
+            for (Edge edge: edges) {
+                drawEdge(gc, edge);
+            }
         }
     }
 }

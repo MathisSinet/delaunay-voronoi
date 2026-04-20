@@ -80,6 +80,25 @@ public class Triangle {
             p3.equals(triangle.getP1()) || p3.equals(triangle.getP2()) || p3.equals(triangle.getP3());
     }
 
+    public Point2D nextVertex(Point2D vertex) {
+        if (vertex.equals(p1)) {
+            return p2;
+        }
+        if (vertex.equals(p2)) {
+            return p3;
+        }
+        return p1;
+    }
+    public Point2D previousVertex(Point2D vertex) {
+        if (vertex.equals(p1)) {
+            return p3;
+        }
+        if (vertex.equals(p3)) {
+            return p2;
+        }
+        return p1;
+    }
+
     public Triangle(Point2D pt1, Point2D pt2, Point2D pt3) {
         if (pt1.angle(pt2, pt3) < 180) {
             p1 = pt1;
